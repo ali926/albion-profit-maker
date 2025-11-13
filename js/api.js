@@ -28,7 +28,7 @@ class AlbionAPI {
         }
     }
 
-    async getMarketPrices(itemIds, locations = ['Thetford', 'Fort Sterling', 'Lymhurst', 'Bridgewatch', 'Martlock', 'Black Market']) {
+    async getMarketPrices(itemIds, locations = ['Thetford', 'Fort Sterling', 'Lymhurst', 'Bridgewatch', 'Martlock', 'Caerleon', 'Black Market']) {
         try {
             if (!Array.isArray(itemIds)) itemIds = [itemIds];
             

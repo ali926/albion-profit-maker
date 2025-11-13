@@ -258,7 +258,7 @@ class DataManager {
             taxRate: 3,
             assumePremium: true,
             updateInterval: 5,
-            defaultCities: ['Thetford', 'Martlock', 'Black Market'],
+            defaultCities: ['Thetford', 'Martlock', 'Caerleon', 'Black Market'],
             notifications: true,
             theme: 'dark'
         };
