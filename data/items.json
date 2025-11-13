@@ -1,0 +1,84 @@
+{
+  "items": [
+    {"id": "T4_ORE", "name": "Iron Ore", "category": "resource", "tier": 4},
+    {"id": "T5_ORE", "name": "Steel Ore", "category": "resource", "tier": 5},
+    {"id": "T6_ORE", "name": "Titanium Ore", "category": "resource", "tier": 6},
+    {"id": "T7_ORE", "name": "Runite Ore", "category": "resource", "tier": 7},
+    {"id": "T8_ORE", "name": "Meteorite Ore", "category": "resource", "tier": 8},
+    {"id": "T4_METALBAR", "name": "Iron Bar", "category": "refined", "tier": 4},
+    {"id": "T5_METALBAR", "name": "Steel Bar", "category": "refined", "tier": 5},
+    {"id": "T6_METALBAR", "name": "Titanium Steel Bar", "category": "refined", "tier": 6},
+    {"id": "T7_METALBAR", "name": "Runite Steel Bar", "category": "refined", "tier": 7},
+    {"id": "T8_METALBAR", "name": "Meteorite Steel Bar", "category": "refined", "tier": 8},
+    {"id": "T4_WOOD", "name": "Birch Logs", "category": "resource", "tier": 4},
+    {"id": "T5_WOOD", "name": "Chestnut Logs", "category": "resource", "tier": 5},
+    {"id": "T6_WOOD", "name": "Pine Logs", "category": "resource", "tier": 6},
+    {"id": "T7_WOOD", "name": "Cedar Logs", "category": "resource", "tier": 7},
+    {"id": "T8_WOOD", "name": "Bloodoak Logs", "category": "resource", "tier": 8},
+    {"id": "T4_PLANKS", "name": "Birch Planks", "category": "refined", "tier": 4},
+    {"id": "T5_PLANKS", "name": "Chestnut Planks", "category": "refined", "tier": 5},
+    {"id": "T6_PLANKS", "name": "Pine Planks", "category": "refined", "tier": 6},
+    {"id": "T7_PLANKS", "name": "Cedar Planks", "category": "refined", "tier": 7},
+    {"id": "T8_PLANKS", "name": "Bloodoak Planks", "category": "refined", "tier": 8},
+    {"id": "T4_CLOTH", "name": "Cotton", "category": "resource", "tier": 4},
+    {"id": "T5_CLOTH", "name": "Fine Cloth", "category": "resource", "tier": 5},
+    {"id": "T6_CLOTH", "name": "Skyflower Blossom", "category": "resource", "tier": 6},
+    {"id": "T7_CLOTH", "name": "Amberleaf Cotton", "category": "resource", "tier": 7},
+    {"id": "T8_CLOTH", "name": "Sunflax", "category": "resource", "tier": 8},
+    {"id": "T4_LEATHER", "name": "Medium Leather", "category": "resource", "tier": 4},
+    {"id": "T5_LEATHER", "name": "Hard Leather", "category": "resource", "tier": 5},
+    {"id": "T6_LEATHER", "name": "Robust Leather", "category": "resource", "tier": 6},
+    {"id": "T7_LEATHER", "name": "Thick Leather", "category": "resource", "tier": 7},
+    {"id": "T8_LEATHER", "name": "Resilient Leather", "category": "resource", "tier": 8},
+    {"id": "T4_ARMOR_CLOTH_SET2", "name": "Scholar Robe", "category": "armor", "tier": 4},
+    {"id": "T5_ARMOR_CLOTH_SET2", "name": "Scholar Robe", "category": "armor", "tier": 5},
+    {"id": "T6_ARMOR_CLOTH_SET2", "name": "Scholar Robe", "category": "armor", "tier": 6},
+    {"id": "T7_ARMOR_CLOTH_SET2", "name": "Scholar Robe", "category": "armor", "tier": 7},
+    {"id": "T8_ARMOR_CLOTH_SET2", "name": "Scholar Robe", "category": "armor", "tier": 8},
+    {"id": "T4_HEAD_CLOTH_SET2", "name": "Scholar Cowl", "category": "armor", "tier": 4},
+    {"id": "T5_HEAD_CLOTH_SET2", "name": "Scholar Cowl", "category": "armor", "tier": 5},
+    {"id": "T6_HEAD_CLOTH_SET2", "name": "Scholar Cowl", "category": "armor", "tier": 6},
+    {"id": "T7_HEAD_CLOTH_SET2", "name": "Scholar Cowl", "category": "armor", "tier": 7},
+    {"id": "T8_HEAD_CLOTH_SET2", "name": "Scholar Cowl", "category": "armor", "tier": 8}
+  ],
+  "recipes": [
+    {
+      "id": "T4_METALBAR",
+      "name": "Iron Bar",
+      "outputItemId": "T4_METALBAR",
+      "outputQuantity": 1,
+      "ingredients": [
+        {"itemId": "T4_ORE", "quantity": 2}
+      ]
+    },
+    {
+      "id": "T5_METALBAR", 
+      "name": "Steel Bar",
+      "outputItemId": "T5_METALBAR",
+      "outputQuantity": 1,
+      "ingredients": [
+        {"itemId": "T5_ORE", "quantity": 2}
+      ]
+    },
+    {
+      "id": "T4_ARMOR_CLOTH_SET2",
+      "name": "Scholar Robe",
+      "outputItemId": "T4_ARMOR_CLOTH_SET2", 
+      "outputQuantity": 1,
+      "ingredients": [
+        {"itemId": "T4_CLOTH", "quantity": 20},
+        {"itemId": "T4_LEATHER", "quantity": 8}
+      ]
+    },
+    {
+      "id": "T5_ARMOR_CLOTH_SET2",
+      "name": "Scholar Robe",
+      "outputItemId": "T5_ARMOR_CLOTH_SET2",
+      "outputQuantity": 1,
+      "ingredients": [
+        {"itemId": "T5_CLOTH", "quantity": 20},
+        {"itemId": "T5_LEATHER", "quantity": 8}
+      ]
+    }
+  ]
+}

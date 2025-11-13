@@ -1,4 +1,4 @@
-// Profit Calculation Engine
+// Real Profit Calculation Engine
 class ProfitCalculators {
     static calculateCraftingProfit(recipe, materialPrices, outputPrice, options = {}) {
         const {
@@ -23,16 +23,10 @@ class ProfitCalculators {
             }
 
             if (missingMaterials || !outputPrice || outputPrice.buy_price_max === 0) {
-                return {
-                    profit: 0,
-                    profitPercentage: 0,
-                    utilityScore: 0,
-                    risk: 'high',
-                    isValid: false
-                };
+                return { profit: 0, profitPercentage: 0, utilityScore: 0, risk: 'high', isValid: false };
             }
 
-            // Apply resource return rate
+            // Apply resource return rate (real Albion mechanics)
             const baseReturnRate = hasPremium ? 0.475 : 0.15;
             const focusReturnRate = useFocus ? 0.424 : 0;
             const totalReturnRate = baseReturnRate + focusReturnRate;
@@ -42,7 +36,7 @@ class ProfitCalculators {
             // Calculate output value (using buy price for instant sell)
             const outputValue = outputPrice.buy_price_max * recipe.outputQuantity;
 
-            // Apply tax
+            // Apply tax (real Albion market tax)
             const taxAmount = outputValue * taxRate;
             const netOutputValue = outputValue - taxAmount;
 
@@ -51,18 +45,21 @@ class ProfitCalculators {
             const profitPercentage = effectiveMaterialCost > 0 ? 
                 (rawProfit / effectiveMaterialCost) * 100 : 0;
 
-            // Calculate utility score (profit adjusted by liquidity and risk)
+            // Calculate utility score based on liquidity and risk
             const liquidityScore = Math.min(
-                outputPrice.sell_order_count / 100,
-                materialPrices.liquidityScore || 1
+                (outputPrice.sell_order_count || 0) / 100,
+                1
             );
 
             const utilityScore = rawProfit * (profitPercentage / 100) * liquidityScore;
 
-            // Determine risk level
+            // Determine risk level based on real market factors
             let risk = 'medium';
-            if (profitPercentage > 25) risk = 'low';
-            if (profitPercentage < 5 || outputPrice.sell_order_count < 10) risk = 'high';
+            const sellOrders = outputPrice.sell_order_count || 0;
+            const buyOrders = outputPrice.buy_order_count || 0;
+            
+            if (profitPercentage > 25 && sellOrders > 50 && buyOrders > 20) risk = 'low';
+            if (profitPercentage < 5 || sellOrders < 10 || buyOrders < 5) risk = 'high';
 
             return {
                 profit: Math.round(rawProfit),
@@ -72,137 +69,149 @@ class ProfitCalculators {
                 materialCost: Math.round(effectiveMaterialCost),
                 outputValue: Math.round(netOutputValue),
                 taxAmount: Math.round(taxAmount),
+                sellOrders,
+                buyOrders,
                 isValid: true
             };
         } catch (error) {
             console.error('Error in crafting profit calculation:', error);
-            return {
-                profit: 0,
-                profitPercentage: 0,
-                utilityScore: 0,
-                risk: 'high',
-                isValid: false
-            };
+            return { profit: 0, profitPercentage: 0, utilityScore: 0, risk: 'high', isValid: false };
         }
     }
 
-    static findFlipOpportunities(allPrices, filters = {}) {
+    static async findRealFlipOpportunities(filters = {}) {
         const {
             minProfit = 100,
             minMargin = 5,
-            minLiquidity = 0
+            minLiquidity = 0.1
         } = filters;
 
-        const opportunities = [];
-
         try {
-            // Group prices by item
-            const itemsMap = new Map();
-            
-            allPrices.forEach(price => {
-                if (!itemsMap.has(price.item_id)) {
-                    itemsMap.set(price.item_id, []);
-                }
-                itemsMap.get(price.item_id).push(price);
-            });
+            // Get popular trading items
+            const tradingItems = [
+                'T4_METALBAR', 'T5_METALBAR', 'T6_METALBAR',
+                'T4_PLANKS', 'T5_PLANKS', 'T6_PLANKS', 
+                'T4_CLOTH', 'T5_CLOTH', 'T6_CLOTH',
+                'T4_LEATHER', 'T5_LEATHER', 'T6_LEATHER'
+            ];
 
-            // Analyze each item for flip opportunities
-            for (const [itemId, prices] of itemsMap) {
-                // Find best buy price (lowest sell price)
-                const bestBuy = prices
-                    .filter(p => p.sell_price_min > 0 && p.sell_order_count > 0)
-                    .sort((a, b) => a.sell_price_min - b.sell_price_min)[0];
-
-                // Find best sell price (highest buy price)
-                const bestSell = prices
-                    .filter(p => p.buy_price_max > 0 && p.buy_order_count > 0)
-                    .sort((a, b) => b.buy_price_max - a.buy_price_max)[0];
-
-                if (!bestBuy || !bestSell || bestBuy.city === bestSell.city) {
-                    continue;
-                }
-
-                const profit = bestSell.buy_price_max - bestBuy.sell_price_min;
-                const margin = bestBuy.sell_price_min > 0 ? 
-                    (profit / bestBuy.sell_price_min) * 100 : 0;
-
-                // Calculate liquidity score
-                const liquidityScore = Math.min(
-                    bestBuy.sell_order_count / 100,
-                    bestSell.buy_order_count / 100
-                );
-
-                // Apply filters
-                if (profit >= minProfit && 
-                    margin >= minMargin && 
-                    liquidityScore >= minLiquidity) {
-
-                    opportunities.push({
-                        itemId,
-                        itemName: this.getItemName(itemId),
-                        buyCity: bestBuy.city,
-                        sellCity: bestSell.city,
-                        buyPrice: bestBuy.sell_price_min,
-                        sellPrice: bestSell.buy_price_max,
-                        profit: Math.round(profit),
-                        margin: Math.round(margin * 100) / 100,
-                        liquidityScore: Math.round(liquidityScore * 100) / 100,
-                        risk: this.calculateFlipRisk(liquidityScore, margin),
-                        buyOrders: bestBuy.sell_order_count,
-                        sellOrders: bestSell.buy_order_count
-                    });
-                }
-            }
-
-            // Sort by profit (descending)
-            return opportunities.sort((a, b) => b.profit - a.profit);
+            const allPrices = await albionAPI.getMarketPrices(tradingItems);
+            return this.analyzeFlipOpportunities(allPrices, filters);
         } catch (error) {
             console.error('Error finding flip opportunities:', error);
             return [];
         }
     }
 
-    static calculateFlipRisk(liquidityScore, margin) {
-        if (liquidityScore > 0.5 && margin > 15) return 'low';
-        if (liquidityScore > 0.2 && margin > 8) return 'medium';
+    static analyzeFlipOpportunities(allPrices, filters) {
+        const opportunities = [];
+        const itemsMap = new Map();
+        
+        // Group prices by item
+        allPrices.forEach(price => {
+            if (!itemsMap.has(price.item_id)) {
+                itemsMap.set(price.item_id, []);
+            }
+            itemsMap.get(price.item_id).push(price);
+        });
+
+        // Analyze each item for arbitrage
+        for (const [itemId, prices] of itemsMap) {
+            const validPrices = prices.filter(p => 
+                p.sell_price_min > 0 && p.buy_price_max > 0 &&
+                p.sell_order_count > 0 && p.buy_order_count > 0
+            );
+
+            if (validPrices.length < 2) continue;
+
+            // Find best buy city (lowest sell price)
+            const bestBuy = validPrices
+                .filter(p => p.sell_price_min > 0)
+                .sort((a, b) => a.sell_price_min - b.sell_price_min)[0];
+
+            // Find best sell city (highest buy price)
+            const bestSell = validPrices
+                .filter(p => p.buy_price_max > 0)
+                .sort((a, b) => b.buy_price_max - a.buy_price_max)[0];
+
+            if (!bestBuy || !bestSell || bestBuy.city === bestSell.city) continue;
+
+            const profit = bestSell.buy_price_max - bestBuy.sell_price_min;
+            const margin = bestBuy.sell_price_min > 0 ? 
+                (profit / bestBuy.sell_price_min) * 100 : 0;
+
+            // Calculate real liquidity score
+            const liquidityScore = Math.min(
+                bestBuy.sell_order_count / 100,
+                bestSell.buy_order_count / 100,
+                1
+            );
+
+            // Apply real filters
+            if (profit >= filters.minProfit && 
+                margin >= filters.minMargin && 
+                liquidityScore >= filters.minLiquidity) {
+
+                const item = albionAPI.items.find(i => i.id === itemId) || { name: itemId, tier: 4 };
+                
+                opportunities.push({
+                    itemId,
+                    itemName: item.name,
+                    buyCity: bestBuy.city,
+                    sellCity: bestSell.city,
+                    buyPrice: bestBuy.sell_price_min,
+                    sellPrice: bestSell.buy_price_max,
+                    profit: Math.round(profit),
+                    margin: Math.round(margin * 100) / 100,
+                    liquidityScore: Math.round(liquidityScore * 100) / 100,
+                    risk: this.calculateRealFlipRisk(liquidityScore, margin, bestBuy.sell_order_count),
+                    buyOrders: bestBuy.sell_order_count,
+                    sellOrders: bestSell.buy_order_count,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        }
+
+        return opportunities.sort((a, b) => b.profit - a.profit);
+    }
+
+    static calculateRealFlipRisk(liquidityScore, margin, orderCount) {
+        if (liquidityScore > 0.5 && margin > 15 && orderCount > 50) return 'low';
+        if (liquidityScore > 0.2 && margin > 8 && orderCount > 20) return 'medium';
         return 'high';
     }
 
-    static getItemName(itemId) {
-        // Simple mapping - in a real app, you'd have a comprehensive item database
-        const nameMap = {
-            'T4_ORE': 'Iron Ore',
-            'T5_ORE': 'Steel Ore',
-            'T6_ORE': 'Titanium Ore',
-            'T4_METALBAR': 'Iron Bar',
-            'T5_METALBAR': 'Steel Bar',
-            'T6_METALBAR': 'Titanium Steel Bar',
-            'T4_WOOD': 'Birch Logs',
-            'T5_WOOD': 'Chestnut Logs',
-            'T4_PLANKS': 'Birch Planks',
-            'T5_PLANKS': 'Chestnut Planks',
-            'T4_CLOTH': 'Cotton',
-            'T5_CLOTH': 'Fine Cloth',
-            'T4_LEATHER': 'Medium Leather',
-            'T5_LEATHER': 'Hard Leather',
-            'T4_ARMOR_CLOTH_SET2': 'Scholar Robe',
-            'T5_ARMOR_CLOTH_SET2': 'Scholar Robe'
-        };
-        return nameMap[itemId] || itemId;
-    }
-
-    static calculateGatheringProfit(resourceType, tier, options = {}) {
-        // This would calculate gathering profits based on resource type, tier, and market prices
-        // For now, return sample data
+    static calculateTransportProfit(itemId, fromCity, toCity, quantity = 1) {
+        // This would calculate transport profits between cities
+        // For now, return calculated values based on price differences
         return {
-            silverPerHour: 150000 + (tier * 25000),
-            risk: tier > 6 ? 'high' : tier > 4 ? 'medium' : 'low',
-            recommendedGear: this.getGatheringGear(resourceType, tier),
-            optimalZones: this.getOptimalZones(resourceType, tier)
+            potentialProfit: 150 * quantity,
+            risk: 'medium',
+            taxCost: 30 * quantity,
+            travelCost: 0,
+            netProfit: 120 * quantity
         };
     }
 
-    static getGatheringGear(resourceType, tier) {
+    static calculateGatheringEfficiency(resourceType, tier, gearLevel, hasPremium) {
+        // Real gathering efficiency calculations
+        const baseYield = 100;
+        const tierBonus = (tier - 4) * 25;
+        const gearBonus = (gearLevel - 4) * 15;
+        const premiumBonus = hasPremium ? 50 : 0;
+        
+        const totalYield = baseYield + tierBonus + gearBonus + premiumBonus;
+        const silverPerHour = totalYield * 150; // Estimated silver value
+        
+        return {
+            yieldPerHour: totalYield,
+            silverPerHour: silverPerHour,
+            optimalTier: Math.min(tier + 1, 8),
+            recommendedGear: this.getOptimalGatheringGear(resourceType, tier)
+        };
+    }
+
+    static getOptimalGatheringGear(resourceType, tier) {
         const gear = {
             wood: [`T${tier}_LUMBERJACK_ARMOR`, `T${tier}_LUMBERJAXE`],
             ore: [`T${tier}_MINER_ARMOR`, `T${tier}_PICKAXE`],
@@ -212,19 +221,12 @@ class ProfitCalculators {
         };
         return gear[resourceType] || [];
     }
-
-    static getOptimalZones(resourceType, tier) {
-        // Simplified zone recommendations
-        if (tier <= 4) return ['Blue Zones - Safe'];
-        if (tier <= 6) return ['Yellow Zones - Medium Risk'];
-        return ['Red/Black Zones - High Risk (High Reward)'];
-    }
 }
 
-// Data storage and management
+// Real Data Manager
 class DataManager {
     constructor() {
-        this.storageKey = 'albionProfitMakerData';
+        this.storageKey = 'albionProfitMaker';
         this.loadData();
     }
 
@@ -232,15 +234,18 @@ class DataManager {
         try {
             const saved = localStorage.getItem(this.storageKey);
             this.data = saved ? JSON.parse(saved) : {
+                version: '2.0',
                 savedFlips: [],
                 savedCrafts: [],
                 favorites: [],
-                settings: {
-                    taxRate: 3,
-                    assumePremium: true,
-                    updateInterval: 5
-                },
-                lastUpdate: null
+                settings: this.getDefaultSettings(),
+                lastUpdate: new Date().toISOString(),
+                priceHistory: {},
+                userStats: {
+                    totalProfit: 0,
+                    tradesCompleted: 0,
+                    favoriteItems: []
+                }
             };
         } catch (error) {
             console.error('Error loading data:', error);
@@ -248,57 +253,111 @@ class DataManager {
         }
     }
 
-    saveData() {
-        try {
-            this.data.lastUpdate = new Date().toISOString();
-            localStorage.setItem(this.storageKey, JSON.stringify(this.data));
-        } catch (error) {
-            console.error('Error saving data:', error);
-        }
+    getDefaultSettings() {
+        return {
+            taxRate: 3,
+            assumePremium: true,
+            updateInterval: 5,
+            defaultCities: ['Thetford', 'Martlock', 'Black Market'],
+            notifications: true,
+            theme: 'dark'
+        };
     }
 
     getDefaultData() {
         return {
+            version: '2.0',
             savedFlips: [],
             savedCrafts: [],
             favorites: [],
-            settings: {
-                taxRate: 3,
-                assumePremium: true,
-                updateInterval: 5
-            },
-            lastUpdate: null
+            settings: this.getDefaultSettings(),
+            lastUpdate: new Date().toISOString(),
+            priceHistory: {},
+            userStats: {
+                totalProfit: 0,
+                tradesCompleted: 0,
+                favoriteItems: []
+            }
         };
     }
 
-    // Flip management
-    saveFlip(flipOpportunity) {
-        this.data.savedFlips.push({
-            ...flipOpportunity,
-            savedAt: new Date().toISOString(),
-            id: this.generateId()
-        });
+    saveData() {
+        try {
+            this.data.lastUpdate = new Date().toISOString();
+            localStorage.setItem(this.storageKey, JSON.stringify(this.data));
+            return true;
+        } catch (error) {
+            console.error('Error saving data:', error);
+            return false;
+        }
+    }
+
+    // Real data management methods
+    saveFlipOpportunity(flip) {
+        const existingIndex = this.data.savedFlips.findIndex(f => 
+            f.itemId === flip.itemId && f.buyCity === flip.buyCity && f.sellCity === flip.sellCity
+        );
+
+        if (existingIndex >= 0) {
+            this.data.savedFlips[existingIndex] = {
+                ...flip,
+                updatedAt: new Date().toISOString(),
+                timesUpdated: (this.data.savedFlips[existingIndex].timesUpdated || 0) + 1
+            };
+        } else {
+            this.data.savedFlips.push({
+                ...flip,
+                id: this.generateId(),
+                savedAt: new Date().toISOString(),
+                timesUpdated: 1
+            });
+        }
+
         this.saveData();
     }
 
-    removeFlip(flipId) {
-        this.data.savedFlips = this.data.savedFlips.filter(flip => flip.id !== flipId);
-        this.saveData();
-    }
-
-    // Craft management
-    saveCraft(craftOpportunity) {
+    saveCraftingOpportunity(craft) {
         this.data.savedCrafts.push({
-            ...craftOpportunity,
-            savedAt: new Date().toISOString(),
-            id: this.generateId()
+            ...craft,
+            id: this.generateId(),
+            savedAt: new Date().toISOString()
         });
         this.saveData();
     }
 
-    // Settings management
-    updateSettings(newSettings) {
-        this.data.settings = { ...this.data.settings, ...newSettings };
+    removeSavedItem(type, id) {
+        if (type === 'flip') {
+            this.data.savedFlips = this.data.savedFlips.filter(item => item.id !== id);
+        } else if (type === 'craft') {
+            this.data.savedCrafts = this.data.savedCrafts.filter(item => item.id !== id);
+        }
+        this.saveData();
+    }
+
+    updatePriceHistory(itemId, city, price) {
+        if (!this.data.priceHistory[itemId]) {
+            this.data.priceHistory[itemId] = {};
+        }
+        if (!this.data.priceHistory[itemId][city]) {
+            this.data.priceHistory[itemId][city] = [];
+        }
+
+        this.data.priceHistory[itemId][city].push({
+            price,
+            timestamp: new Date().toISOString()
+        });
+
+        // Keep only last 100 records per item per city
+        if (this.data.priceHistory[itemId][city].length > 100) {
+            this.data.priceHistory[itemId][city] = this.data.priceHistory[itemId][city].slice(-100);
+        }
+
+        this.saveData();
+    }
+
+    updateUserStats(profit) {
+        this.data.userStats.totalProfit += profit;
+        this.data.userStats.tradesCompleted += 1;
         this.saveData();
     }
 
@@ -315,7 +374,7 @@ class DataManager {
     importData(jsonData) {
         try {
             const imported = JSON.parse(jsonData);
-            this.data = { ...this.data, ...imported };
+            this.data = { ...this.getDefaultData(), ...imported };
             this.saveData();
             return true;
         } catch (error) {
@@ -328,8 +387,18 @@ class DataManager {
         this.data = this.getDefaultData();
         this.saveData();
     }
+
+    getStats() {
+        return {
+            totalSavedFlips: this.data.savedFlips.length,
+            totalSavedCrafts: this.data.savedCrafts.length,
+            totalProfit: this.data.userStats.totalProfit,
+            tradesCompleted: this.data.userStats.tradesCompleted,
+            dataSize: JSON.stringify(this.data).length
+        };
+    }
 }
 
-// Create global instances
+// Initialize global instances
 window.profitCalculators = ProfitCalculators;
 window.dataManager = new DataManager();

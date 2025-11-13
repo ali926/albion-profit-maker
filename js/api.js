@@ -1,28 +1,50 @@
-// Albion Online Data API Service
+// Real Albion Online Data API Service
 class AlbionAPI {
     constructor() {
         this.baseURL = 'https://west.albion-online-data.com/api/v2/stats';
         this.cache = new Map();
-        this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+        this.cacheTimeout = 2 * 60 * 1000; // 2 minutes
+        this.items = [];
+        this.recipes = [];
+        this.loadItemDatabase();
+    }
+
+    async loadItemDatabase() {
+        try {
+            const response = await fetch('./data/items.json');
+            const data = await response.json();
+            this.items = data.items;
+            this.recipes = data.recipes;
+            console.log(`Loaded ${this.items.length} items and ${this.recipes.length} recipes`);
+        } catch (error) {
+            console.error('Failed to load item database:', error);
+            // Fallback to embedded data
+            this.items = [
+                {"id": "T4_ORE", "name": "Iron Ore", "category": "resource", "tier": 4},
+                {"id": "T5_ORE", "name": "Steel Ore", "category": "resource", "tier": 5},
+                {"id": "T4_METALBAR", "name": "Iron Bar", "category": "refined", "tier": 4},
+                {"id": "T5_METALBAR", "name": "Steel Bar", "category": "refined", "tier": 5}
+            ];
+        }
     }
 
     async getMarketPrices(itemIds, locations = ['Thetford', 'Fort Sterling', 'Lymhurst', 'Bridgewatch', 'Martlock', 'Black Market']) {
         try {
+            if (!Array.isArray(itemIds)) itemIds = [itemIds];
+            
             const cacheKey = `prices_${itemIds.join('_')}_${locations.join('_')}`;
             const cached = this.getFromCache(cacheKey);
             if (cached) return cached;
 
             const locationParam = locations.join(',');
-            const itemParam = Array.isArray(itemIds) ? itemIds.join(',') : itemIds;
+            const itemParam = itemIds.join(',');
             
             const url = `${this.baseURL}/prices/${itemParam}?locations=${locationParam}`;
             
-            console.log(`Fetching prices from: ${url}`);
+            console.log(`Fetching real prices from: ${url}`);
             const response = await fetch(url);
             
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status} ${response.statusText}`);
-            }
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
             
             const data = await response.json();
             this.setCache(cacheKey, data);
@@ -34,84 +56,99 @@ class AlbionAPI {
     }
 
     async searchItems(query) {
+        if (!query || query.length < 2) return [];
+        
+        const searchTerm = query.toLowerCase();
+        return this.items.filter(item => 
+            item.name.toLowerCase().includes(searchTerm) ||
+            item.id.toLowerCase().includes(searchTerm)
+        ).slice(0, 15);
+    }
+
+    getRecipe(itemId) {
+        return this.recipes.find(recipe => recipe.outputItemId === itemId) || null;
+    }
+
+    getAllRecipes() {
+        return this.recipes;
+    }
+
+    async calculateAllCraftingProfits(options = {}) {
+        const { taxRate = 0.03, hasPremium = true, useFocus = false } = options;
+        const profitableRecipes = [];
+
         try {
-            // Since the official API doesn't have search, we'll use a local item database
-            const items = await this.getItemDatabase();
-            const searchTerm = query.toLowerCase();
-            
-            return items.filter(item => 
-                item.name.toLowerCase().includes(searchTerm) ||
-                item.id.toLowerCase().includes(searchTerm)
-            ).slice(0, 20); // Limit results
+            // Get prices for all items needed for recipes
+            const allItemIds = [...new Set([
+                ...this.recipes.map(r => r.outputItemId),
+                ...this.recipes.flatMap(r => r.ingredients.map(i => i.itemId))
+            ])];
+
+            const allPrices = await this.getMarketPrices(allItemIds);
+            const priceMap = this.createPriceMap(allPrices);
+
+            // Calculate profit for each recipe
+            for (const recipe of this.recipes) {
+                const outputPrice = priceMap[recipe.outputItemId];
+                if (!outputPrice) continue;
+
+                const materialPrices = {};
+                let missingPrices = false;
+                
+                for (const ingredient of recipe.ingredients) {
+                    const price = priceMap[ingredient.itemId];
+                    if (!price || price.sell_price_min === 0) {
+                        missingPrices = true;
+                        break;
+                    }
+                    materialPrices[ingredient.itemId] = price;
+                }
+
+                if (missingPrices) continue;
+
+                const profitResult = ProfitCalculators.calculateCraftingProfit(
+                    recipe, materialPrices, outputPrice, options
+                );
+
+                if (profitResult.isValid && profitResult.profit > 0) {
+                    profitableRecipes.push({
+                        recipe,
+                        profit: profitResult,
+                        cities: this.findBestCities(priceMap, recipe.outputItemId)
+                    });
+                }
+            }
+
+            return profitableRecipes.sort((a, b) => b.profit.profit - a.profit.profit);
         } catch (error) {
-            console.error('Error searching items:', error);
+            console.error('Error calculating all crafting profits:', error);
             return [];
         }
     }
 
-    async getItemDatabase() {
-        // This would be a comprehensive list of Albion items
-        // For now, we'll return a sample set and expand as needed
-        return [
-            { id: 'T4_ORE', name: 'Iron Ore', category: 'ORE', tier: 4 },
-            { id: 'T5_ORE', name: 'Steel Ore', category: 'ORE', tier: 5 },
-            { id: 'T6_ORE', name: 'Titanium Ore', category: 'ORE', tier: 6 },
-            { id: 'T4_METALBAR', name: 'Iron Bar', category: 'METALBAR', tier: 4 },
-            { id: 'T5_METALBAR', name: 'Steel Bar', category: 'METALBAR', tier: 5 },
-            { id: 'T6_METALBAR', name: 'Titanium Steel Bar', category: 'METALBAR', tier: 6 },
-            { id: 'T4_WOOD', name: 'Birch Logs', category: 'WOOD', tier: 4 },
-            { id: 'T5_WOOD', name: 'Chestnut Logs', category: 'WOOD', tier: 5 },
-            { id: 'T6_WOOD', name: 'Pine Logs', category: 'WOOD', tier: 6 },
-            { id: 'T4_PLANKS', name: 'Birch Planks', category: 'PLANKS', tier: 4 },
-            { id: 'T5_PLANKS', name: 'Chestnut Planks', category: 'PLANKS', tier: 5 },
-            { id: 'T4_CLOTH', name: 'Cotton', category: 'CLOTH', tier: 4 },
-            { id: 'T5_CLOTH', name: 'Fine Cloth', category: 'CLOTH', tier: 5 },
-            { id: 'T4_LEATHER', name: 'Medium Leather', category: 'LEATHER', tier: 4 },
-            { id: 'T5_LEATHER', name: 'Hard Leather', category: 'LEATHER', tier: 5 },
-            { id: 'T4_HEAD_CLOTH_SET2', name: 'Scholar Cowl', category: 'HEAD_CLOTH', tier: 4 },
-            { id: 'T5_HEAD_CLOTH_SET2', name: 'Scholar Cowl', category: 'HEAD_CLOTH', tier: 5 },
-            { id: 'T4_ARMOR_CLOTH_SET2', name: 'Scholar Robe', category: 'ARMOR_CLOTH', tier: 4 },
-            { id: 'T5_ARMOR_CLOTH_SET2', name: 'Scholar Robe', category: 'ARMOR_CLOTH', tier: 5 },
-            { id: 'T4_SHOES_CLOTH_SET2', name: 'Scholar Sandals', category: 'SHOES_CLOTH', tier: 4 },
-            { id: 'T5_SHOES_CLOTH_SET2', name: 'Scholar Sandals', category: 'SHOES_CLOTH', tier: 5 }
-        ];
+    createPriceMap(prices) {
+        const map = {};
+        prices.forEach(price => {
+            if (!map[price.item_id]) map[price.item_id] = price;
+            // Keep the price from the city with best liquidity
+            if (price.sell_order_count > (map[price.item_id].sell_order_count || 0)) {
+                map[price.item_id] = price;
+            }
+        });
+        return map;
     }
 
-    async getRecipe(itemId) {
-        // In a real implementation, you'd have a comprehensive recipe database
-        // For now, we'll return some sample recipes
-        const recipes = {
-            'T4_METALBAR': {
-                id: 'recipe_t4_metalbar',
-                name: 'Iron Bar',
-                outputItemId: 'T4_METALBAR',
-                outputQuantity: 1,
-                ingredients: [
-                    { itemId: 'T4_ORE', quantity: 2 }
-                ]
-            },
-            'T5_METALBAR': {
-                id: 'recipe_t5_metalbar',
-                name: 'Steel Bar',
-                outputItemId: 'T5_METALBAR',
-                outputQuantity: 1,
-                ingredients: [
-                    { itemId: 'T5_ORE', quantity: 2 }
-                ]
-            },
-            'T4_ARMOR_CLOTH_SET2': {
-                id: 'recipe_t4_scholar_robe',
-                name: 'Scholar Robe',
-                outputItemId: 'T4_ARMOR_CLOTH_SET2',
-                outputQuantity: 1,
-                ingredients: [
-                    { itemId: 'T4_CLOTH', quantity: 20 },
-                    { itemId: 'T4_LEATHER', quantity: 8 }
-                ]
-            }
+    findBestCities(priceMap, itemId) {
+        const prices = Object.values(priceMap).filter(p => p.item_id === itemId);
+        const bestSell = prices.filter(p => p.buy_price_max > 0)
+            .sort((a, b) => b.buy_price_max - a.buy_price_max)[0];
+        const bestBuy = prices.filter(p => p.sell_price_min > 0)
+            .sort((a, b) => a.sell_price_min - b.sell_price_min)[0];
+        
+        return {
+            bestSellCity: bestSell?.city,
+            bestBuyCity: bestBuy?.city
         };
-
-        return recipes[itemId] || null;
     }
 
     getFromCache(key) {
@@ -124,28 +161,12 @@ class AlbionAPI {
     }
 
     setCache(key, data) {
-        this.cache.set(key, {
-            data,
-            timestamp: Date.now()
-        });
+        this.cache.set(key, { data, timestamp: Date.now() });
     }
 
     clearCache() {
         this.cache.clear();
     }
-
-    // Get current server status
-    async getServerStatus() {
-        try {
-            const response = await fetch('https://serverstatus.albiononline.com/');
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Error fetching server status:', error);
-            return null;
-        }
-    }
 }
 
-// Create global API instance
 window.albionAPI = new AlbionAPI();

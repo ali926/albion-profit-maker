@@ -1,9 +1,11 @@
-// UI Management and DOM Manipulation
+// Real UI Manager with Actual Functionality
 class UIManager {
     constructor() {
         this.currentTab = 'dashboard';
         this.isLoading = false;
+        this.searchTimeout = null;
         this.initializeEventListeners();
+        this.loadUserPreferences();
     }
 
     initializeEventListeners() {
@@ -14,121 +16,118 @@ class UIManager {
             });
         });
 
-        // Crafting calculator
+        // Real crafting calculator
         document.getElementById('calculateCrafting').addEventListener('click', () => {
-            this.calculateCraftingProfits();
+            this.calculateRealCraftingProfits();
         });
 
         document.getElementById('itemSearch').addEventListener('input', (e) => {
-            this.handleItemSearch(e.target.value);
+            this.handleRealItemSearch(e.target.value);
         });
 
-        // Flipping calculator
+        // Real flipping calculator
         document.getElementById('findFlips').addEventListener('click', () => {
-            this.findFlipOpportunities();
+            this.findRealFlipOpportunities();
         });
 
-        // Price checker
+        // Real price checker
         document.getElementById('checkPrices').addEventListener('click', () => {
-            this.checkItemPrices();
+            this.checkRealItemPrices();
         });
 
         document.getElementById('priceSearch').addEventListener('input', (e) => {
-            this.handlePriceSearch(e.target.value);
+            this.handleRealPriceSearch(e.target.value);
         });
 
-        // Farming calculator
+        // Real farming calculator
         document.getElementById('calculateGathering').addEventListener('click', () => {
-            this.calculateGatheringProfit();
+            this.calculateRealGatheringProfit();
         });
 
         // Settings
         document.getElementById('exportData').addEventListener('click', () => {
-            this.exportData();
+            this.exportRealData();
         });
 
         document.getElementById('clearData').addEventListener('click', () => {
-            this.clearData();
+            this.clearRealData();
         });
 
-        // Global refresh
         document.getElementById('refreshAll').addEventListener('click', () => {
-            this.refreshAllData();
+            this.refreshRealData();
         });
 
-        // Enter key support for search inputs
+        // Real-time search with debouncing
+        document.getElementById('itemSearch').addEventListener('input', (e) => {
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                this.handleRealItemSearch(e.target.value);
+            }, 300);
+        });
+
+        document.getElementById('priceSearch').addEventListener('input', (e) => {
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                this.handleRealPriceSearch(e.target.value);
+            }, 300);
+        });
+
+        // Enter key support
         document.getElementById('itemSearch').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.calculateCraftingProfits();
+            if (e.key === 'Enter') this.calculateRealCraftingProfits();
         });
 
         document.getElementById('priceSearch').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.checkItemPrices();
+            if (e.key === 'Enter') this.checkRealItemPrices();
         });
     }
 
-    switchTab(tabName) {
-        // Update active nav button
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
+    async switchTab(tabName) {
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        
         document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-
-        // Update active tab content
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.remove('active');
-        });
         document.getElementById(tabName).classList.add('active');
 
         this.currentTab = tabName;
-        this.updateStatus(`Switched to ${this.getTabDisplayName(tabName)}`);
+        this.updateStatus(`Loaded ${this.getTabDisplayName(tabName)}`);
 
-        // Load tab-specific data
-        this.loadTabData(tabName);
+        await this.loadRealTabData(tabName);
     }
 
-    getTabDisplayName(tab) {
-        const names = {
-            'dashboard': 'Dashboard',
-            'crafting': 'Crafting Calculator',
-            'flipping': 'Market Flipping',
-            'prices': 'Price Checker',
-            'farming': 'Farming Calculator',
-            'settings': 'Settings'
-        };
-        return names[tab] || tab;
-    }
-
-    async loadTabData(tabName) {
+    async loadRealTabData(tabName) {
         switch (tabName) {
             case 'dashboard':
-                await this.loadDashboardData();
+                await this.loadRealDashboard();
                 break;
             case 'crafting':
-                // Nothing to preload
+                await this.preloadCraftingData();
                 break;
             case 'flipping':
-                // Nothing to preload
+                await this.preloadFlippingData();
                 break;
             case 'prices':
-                // Nothing to preload
+                // Price data loaded on demand
                 break;
             case 'settings':
-                this.loadSettings();
+                this.loadRealSettings();
                 break;
         }
     }
 
-    async loadDashboardData() {
+    async loadRealDashboard() {
+        this.showLoading(true);
         try {
-            this.showLoading(true);
+            // Load real market data for dashboard
+            const popularItems = ['T4_METALBAR', 'T5_METALBAR', 'T4_PLANKS', 'T5_PLANKS'];
+            const prices = await albionAPI.getMarketPrices(popularItems);
             
-            // Load some sample data for dashboard
-            const sampleItems = ['T4_METALBAR', 'T5_METALBAR', 'T4_ARMOR_CLOTH_SET2'];
-            const prices = await albionAPI.getMarketPrices(sampleItems);
+            // Calculate real stats
+            const flips = await profitCalculators.findRealFlipOpportunities({ minProfit: 50 });
+            const craftingProfits = await albionAPI.calculateAllCraftingProfits();
             
-            // Update stats
-            this.updateDashboardStats(prices);
-            this.updateDashboardOpportunities(prices);
+            this.updateRealDashboardStats(flips, craftingProfits, prices);
+            this.updateRealDashboardOpportunities(flips, craftingProfits);
             
         } catch (error) {
             this.showError('Failed to load dashboard data: ' + error.message);
@@ -137,100 +136,78 @@ class UIManager {
         }
     }
 
-    updateDashboardStats(prices) {
-        // Calculate some sample stats
-        const topFlip = 1247;
-        const topCraft = 892;
-        const hotItems = prices.filter(p => p.sell_price_min > 0 && p.buy_price_max > 0).length;
+    updateRealDashboardStats(flips, crafts, prices) {
+        const topFlip = flips.length > 0 ? Math.max(...flips.map(f => f.profit)) : 0;
+        const topCraft = crafts.length > 0 ? Math.max(...crafts.map(c => c.profit.profit)) : 0;
+        const activeItems = prices.filter(p => p.sell_price_min > 0 && p.buy_price_max > 0).length;
 
         document.getElementById('topFlipProfit').textContent = topFlip.toLocaleString();
         document.getElementById('topCraftProfit').textContent = topCraft.toLocaleString();
-        document.getElementById('hotItems').textContent = hotItems;
-        document.getElementById('lastUpdate').textContent = 'Just now';
+        document.getElementById('hotItems').textContent = activeItems;
+        document.getElementById('lastUpdate').textContent = 'Live';
     }
 
-    updateDashboardOpportunities(prices) {
-        // This would populate the dashboard with real opportunities
-        const topCraftingHTML = `
+    updateRealDashboardOpportunities(flips, crafts) {
+        const topCraftingHTML = crafts.slice(0, 3).map(craft => `
             <div class="opportunity-item">
                 <div class="opp-header">
-                    <span class="opp-name">Steel Bars</span>
-                    <span class="opp-profit">+1,247 silver</span>
+                    <span class="opp-name">${craft.recipe.name}</span>
+                    <span class="opp-profit" style="color: #27ae60;">+${craft.profit.profit.toLocaleString()} silver</span>
                 </div>
                 <div class="opp-details">
-                    <span>28.5% margin • Low Risk</span>
+                    <span>${craft.profit.profitPercentage}% margin • ${craft.profit.risk.toUpperCase()} Risk</span>
                 </div>
             </div>
-            <div class="opportunity-item">
-                <div class="opp-header">
-                    <span class="opp-name">Scholar Robes</span>
-                    <span class="opp-profit">+892 silver</span>
-                </div>
-                <div class="opp-details">
-                    <span>15.2% margin • Medium Risk</span>
-                </div>
-            </div>
-        `;
+        `).join('');
 
-        const topFlippingHTML = `
+        const topFlippingHTML = flips.slice(0, 3).map(flip => `
             <div class="opportunity-item">
                 <div class="opp-header">
-                    <span class="opp-name">Steel Bars</span>
-                    <span class="opp-profit">+245 silver</span>
+                    <span class="opp-name">${flip.itemName}</span>
+                    <span class="opp-profit" style="color: #27ae60;">+${flip.profit.toLocaleString()} silver</span>
                 </div>
                 <div class="opp-details">
-                    <span>Thetford → Martlock • 12.5% margin</span>
+                    <span>${flip.buyCity} → ${flip.sellCity} • ${flip.margin}% margin</span>
                 </div>
             </div>
-            <div class="opportunity-item">
-                <div class="opp-header">
-                    <span class="opp-name">Fine Cloth</span>
-                    <span class="opp-profit">+189 silver</span>
-                </div>
-                <div class="opp-details">
-                    <span>Lymhurst → Bridgewatch • 8.7% margin</span>
-                </div>
-            </div>
-        `;
+        `).join('');
 
-        document.getElementById('topCrafting').innerHTML = topCraftingHTML;
-        document.getElementById('topFlipping').innerHTML = topFlippingHTML;
+        document.getElementById('topCrafting').innerHTML = topCraftingHTML || '<div class="no-data">No profitable crafts found</div>';
+        document.getElementById('topFlipping').innerHTML = topFlippingHTML || '<div class="no-data">No flip opportunities found</div>';
     }
 
-    async handleItemSearch(query) {
-        if (query.length < 2) {
-            document.getElementById('searchResults').innerHTML = '';
-            document.getElementById('searchResults').style.display = 'none';
+    async handleRealItemSearch(query) {
+        if (!query || query.length < 2) {
+            this.hideSearchResults('searchResults');
             return;
         }
 
         try {
             const results = await albionAPI.searchItems(query);
-            this.displaySearchResults(results, 'searchResults');
+            this.displayRealSearchResults(results, 'searchResults');
         } catch (error) {
             console.error('Search error:', error);
         }
     }
 
-    async handlePriceSearch(query) {
-        if (query.length < 2) {
-            document.getElementById('priceSearchResults').innerHTML = '';
-            document.getElementById('priceSearchResults').style.display = 'none';
+    async handleRealPriceSearch(query) {
+        if (!query || query.length < 2) {
+            this.hideSearchResults('priceSearchResults');
             return;
         }
 
         try {
             const results = await albionAPI.searchItems(query);
-            this.displaySearchResults(results, 'priceSearchResults');
+            this.displayRealSearchResults(results, 'priceSearchResults');
         } catch (error) {
             console.error('Price search error:', error);
         }
     }
 
-    displaySearchResults(results, containerId) {
+    displayRealSearchResults(results, containerId) {
         const container = document.getElementById(containerId);
         
-        if (results.length === 0) {
+        if (!results || results.length === 0) {
             container.innerHTML = '<div class="search-result-item">No items found</div>';
             container.style.display = 'block';
             return;
@@ -243,7 +220,6 @@ class UIManager {
             </div>
         `).join('');
 
-        // Add click handlers
         container.querySelectorAll('.search-result-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 const itemId = e.currentTarget.dataset.itemId;
@@ -251,10 +227,10 @@ class UIManager {
                 
                 if (containerId === 'searchResults') {
                     document.getElementById('itemSearch').value = itemName;
-                    this.calculateCraftingProfits(itemId);
+                    this.calculateRealCraftingProfits(itemId);
                 } else {
                     document.getElementById('priceSearch').value = itemName;
-                    this.checkItemPrices(itemId);
+                    this.checkRealItemPrices(itemId);
                 }
                 
                 container.style.display = 'none';
@@ -264,7 +240,13 @@ class UIManager {
         container.style.display = 'block';
     }
 
-    async calculateCraftingProfits(specificItemId = null) {
+    hideSearchResults(containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        container.style.display = 'none';
+    }
+
+    async calculateRealCraftingProfits(specificItemId = null) {
         this.showLoading(true);
         
         try {
@@ -272,33 +254,33 @@ class UIManager {
             if (!itemId) {
                 const searchValue = document.getElementById('itemSearch').value.trim();
                 if (!searchValue) {
-                    this.showError('Please enter an item to search');
+                    // Calculate profits for all recipes
+                    await this.calculateAllRealCraftingProfits();
                     return;
                 }
-                // In a real implementation, you'd map the search term to an item ID
-                itemId = 'T4_ARMOR_CLOTH_SET2'; // Default for demo
+                // Find item ID from search
+                const results = await albionAPI.searchItems(searchValue);
+                if (results.length === 0) {
+                    this.showError('Item not found: ' + searchValue);
+                    return;
+                }
+                itemId = results[0].id;
             }
 
-            // Get recipe
-            const recipe = await albionAPI.getRecipe(itemId);
+            const recipe = albionAPI.getRecipe(itemId);
             if (!recipe) {
                 this.showError('No recipe found for this item');
                 return;
             }
 
-            // Get prices for all required items
             const itemIds = [recipe.outputItemId, ...recipe.ingredients.map(i => i.itemId)];
             const prices = await albionAPI.getMarketPrices(itemIds);
 
-            // Organize prices by item ID
             const priceMap = {};
             prices.forEach(price => {
-                if (!priceMap[price.item_id]) {
-                    priceMap[price.item_id] = price;
-                }
+                if (!priceMap[price.item_id]) priceMap[price.item_id] = price;
             });
 
-            // Get calculation options
             const options = {
                 taxRate: parseFloat(document.getElementById('taxRate').value) / 100,
                 hasPremium: document.getElementById('premiumBonus').checked,
@@ -306,16 +288,13 @@ class UIManager {
                 useJournals: document.getElementById('useJournals').checked
             };
 
-            // Calculate profit
             const outputPrice = priceMap[recipe.outputItemId];
             const profitResult = profitCalculators.calculateCraftingProfit(
                 recipe, priceMap, outputPrice, options
             );
 
-            // Display results
-            this.displayCraftingResults(recipe, profitResult, priceMap);
-
-            this.updateStatus(`Calculated profits for ${recipe.name}`);
+            this.displayRealCraftingResults(recipe, profitResult, priceMap);
+            this.updateStatus(`Calculated real profits for ${recipe.name}`);
 
         } catch (error) {
             this.showError('Failed to calculate crafting profits: ' + error.message);
@@ -324,51 +303,76 @@ class UIManager {
         }
     }
 
-    displayCraftingResults(recipe, profitResult, priceMap) {
+    async calculateAllRealCraftingProfits() {
+        this.showLoading(true);
+        try {
+            const options = {
+                taxRate: parseFloat(document.getElementById('taxRate').value) / 100,
+                hasPremium: document.getElementById('premiumBonus').checked,
+                useFocus: document.getElementById('useFocus').checked
+            };
+
+            const profitableRecipes = await albionAPI.calculateAllCraftingProfits(options);
+            this.displayAllRealCraftingResults(profitableRecipes);
+            
+            this.updateStatus(`Found ${profitableRecipes.length} profitable crafting opportunities`);
+        } catch (error) {
+            this.showError('Failed to calculate all crafting profits: ' + error.message);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    displayRealCraftingResults(recipe, profitResult, priceMap) {
         const container = document.getElementById('craftingResults');
         
         if (!profitResult.isValid) {
             container.innerHTML = `
                 <div class="no-data">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>Insufficient market data to calculate profits for ${recipe.name}</p>
+                    <p>Insufficient market data for ${recipe.name}</p>
+                    <small>Try checking during peak hours</small>
                 </div>
             `;
             return;
         }
 
-        const profitClass = profitResult.risk === 'low' ? 'high' : 
-                          profitResult.risk === 'medium' ? 'medium' : 'low';
-
+        const riskColor = profitResult.risk === 'low' ? '#27ae60' : profitResult.risk === 'medium' ? '#f39c12' : '#e74c3c';
+        
         const html = `
-            <div class="result-item ${profitResult.risk}-risk">
+            <div class="result-item" style="border-left-color: ${riskColor}">
                 <div class="result-header">
-                    <h4>${recipe.name}</h4>
-                    <span class="profit-badge ${profitClass}">
-                        ${profitResult.profit.toLocaleString()} silver profit
+                    <h4>${recipe.name} (T${albionAPI.items.find(i => i.id === recipe.outputItemId)?.tier || 4})</h4>
+                    <span class="profit-badge" style="background: ${riskColor === '#27ae60' ? '#d4edda' : riskColor === '#f39c12' ? '#fff3cd' : '#f8d7da'}; color: ${riskColor === '#27ae60' ? '#155724' : riskColor === '#f39c12' ? '#856404' : '#721c24'}">
+                        ${profitResult.profit.toLocaleString()} silver
                     </span>
                 </div>
                 <div class="result-details">
                     <div class="detail-item">
-                        <div class="detail-label">Profit Margin</div>
-                        <div class="detail-value">${profitResult.profitPercentage}%</div>
+                        <div class="detail-label">PROFIT MARGIN</div>
+                        <div class="detail-value" style="color: ${profitResult.profitPercentage > 0 ? '#27ae60' : '#e74c3c'}">
+                            ${profitResult.profitPercentage}%
+                        </div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">Material Cost</div>
+                        <div class="detail-label">MATERIAL COST</div>
                         <div class="detail-value">${profitResult.materialCost.toLocaleString()}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">Sell Price</div>
+                        <div class="detail-label">SELL VALUE</div>
                         <div class="detail-value">${profitResult.outputValue.toLocaleString()}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">Risk Level</div>
-                        <div class="detail-value">${profitResult.risk.toUpperCase()}</div>
+                        <div class="detail-label">MARKET LIQUIDITY</div>
+                        <div class="detail-value">${profitResult.sellOrders} sell / ${profitResult.buyOrders} buy</div>
                     </div>
                 </div>
                 <div class="result-actions">
-                    <button class="btn-secondary save-craft" data-recipe='${JSON.stringify(recipe)}'>
-                        <i class="fas fa-save"></i> Save
+                    <button class="btn-primary save-craft" data-recipe='${JSON.stringify(recipe).replace(/'/g, "\\'")}' data-profit='${JSON.stringify(profitResult).replace(/'/g, "\\'")}'>
+                        <i class="fas fa-save"></i> Save Opportunity
+                    </button>
+                    <button class="btn-secondary" onclick="uiManager.checkRealItemPrices('${recipe.outputItemId}')">
+                        <i class="fas fa-chart-line"></i> Check Prices
                     </button>
                 </div>
             </div>
@@ -376,44 +380,86 @@ class UIManager {
 
         container.innerHTML = html;
 
-        // Add save handler
         container.querySelector('.save-craft').addEventListener('click', (e) => {
             const recipeData = JSON.parse(e.target.dataset.recipe);
-            dataManager.saveCraft({
+            const profitData = JSON.parse(e.target.dataset.profit);
+            dataManager.saveCraftingOpportunity({
                 recipe: recipeData,
-                profit: profitResult,
+                profit: profitData,
                 calculatedAt: new Date().toISOString()
             });
-            this.showSuccess('Craft saved to favorites!');
+            this.showSuccess('Crafting opportunity saved!');
         });
     }
 
-    async findFlipOpportunities() {
+    displayAllRealCraftingResults(profitableRecipes) {
+        const container = document.getElementById('craftingResults');
+        
+        if (profitableRecipes.length === 0) {
+            container.innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-search"></i>
+                    <p>No profitable crafting opportunities found</p>
+                    <small>Try adjusting your filters or check during peak market hours</small>
+                </div>
+            `;
+            return;
+        }
+
+        const html = profitableRecipes.map(item => {
+            const recipe = item.recipe;
+            const profit = item.profit;
+            const riskColor = profit.risk === 'low' ? '#27ae60' : profit.risk === 'medium' ? '#f39c12' : '#e74c3c';
+            
+            return `
+                <div class="result-item" style="border-left-color: ${riskColor}">
+                    <div class="result-header">
+                        <h4>${recipe.name} (T${albionAPI.items.find(i => i.id === recipe.outputItemId)?.tier || 4})</h4>
+                        <span class="profit-badge" style="background: ${riskColor === '#27ae60' ? '#d4edda' : riskColor === '#f39c12' ? '#fff3cd' : '#f8d7da'}; color: ${riskColor === '#27ae60' ? '#155724' : riskColor === '#f39c12' ? '#856404' : '#721c24'}">
+                            ${profit.profit.toLocaleString()} silver
+                        </span>
+                    </div>
+                    <div class="result-details">
+                        <div class="detail-item">
+                            <div class="detail-label">PROFIT MARGIN</div>
+                            <div class="detail-value" style="color: ${profit.profitPercentage > 0 ? '#27ae60' : '#e74c3c'}">
+                                ${profit.profitPercentage}%
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">MATERIAL COST</div>
+                            <div class="detail-value">${profit.materialCost.toLocaleString()}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">MARKET ORDERS</div>
+                            <div class="detail-value">${profit.sellOrders} sell / ${profit.buyOrders} buy</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">RISK LEVEL</div>
+                            <div class="detail-value" style="color: ${riskColor}">${profit.risk.toUpperCase()}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = html;
+    }
+
+    async findRealFlipOpportunities() {
         this.showLoading(true);
         
         try {
-            // Get popular items for flipping analysis
-            const popularItems = [
-                'T4_METALBAR', 'T5_METALBAR', 'T4_PLANKS', 'T5_PLANKS',
-                'T4_CLOTH', 'T5_CLOTH', 'T4_LEATHER', 'T5_LEATHER'
-            ];
-
-            const prices = await albionAPI.getMarketPrices(popularItems);
-
-            // Get filters
             const filters = {
                 minProfit: parseInt(document.getElementById('minProfit').value) || 100,
                 minMargin: parseInt(document.getElementById('minMargin').value) || 5,
-                minLiquidity: 0 // You could add this filter
+                minLiquidity: 0.1
             };
 
-            // Find opportunities
-            const opportunities = profitCalculators.findFlipOpportunities(prices, filters);
-
-            // Display results
-            this.displayFlipOpportunities(opportunities);
-
-            this.updateStatus(`Found ${opportunities.length} flip opportunities`);
+            const opportunities = await profitCalculators.findRealFlipOpportunities(filters);
+            this.displayRealFlipOpportunities(opportunities);
+            
+            this.updateStatus(`Found ${opportunities.length} real flip opportunities`);
 
         } catch (error) {
             this.showError('Failed to find flip opportunities: ' + error.message);
@@ -422,7 +468,7 @@ class UIManager {
         }
     }
 
-    displayFlipOpportunities(opportunities) {
+    displayRealFlipOpportunities(opportunities) {
         const container = document.getElementById('flipsResults');
         const countElement = document.getElementById('flipsCount');
 
@@ -432,6 +478,7 @@ class UIManager {
                     <td colspan="8" class="no-data">
                         <i class="fas fa-search"></i>
                         <p>No flip opportunities found with current filters</p>
+                        <small>Try adjusting minimum profit or margin requirements</small>
                     </td>
                 </tr>
             `;
@@ -439,42 +486,40 @@ class UIManager {
             return;
         }
 
-        countElement.textContent = `${opportunities.length} opportunities found`;
+        countElement.textContent = `${opportunities.length} real opportunities found`;
 
-        container.innerHTML = opportunities.map(opp => `
-            <tr>
-                <td><strong>${opp.itemName}</strong></td>
-                <td>${opp.buyCity}</td>
-                <td>${opp.sellCity}</td>
-                <td style="color: #27ae60; font-weight: bold;">${opp.profit.toLocaleString()}</td>
-                <td>${opp.margin}%</td>
-                <td>
-                    <span class="liquidity-${opp.liquidityScore > 0.5 ? 'high' : opp.liquidityScore > 0.2 ? 'medium' : 'low'}">
-                        ${opp.liquidityScore.toFixed(1)}
-                    </span>
-                </td>
-                <td>
-                    <span class="risk-${opp.risk}">${opp.risk.toUpperCase()}</span>
-                </td>
-                <td>
-                    <button class="btn-secondary save-flip" data-opp='${JSON.stringify(opp)}'>
-                        <i class="fas fa-save"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        container.innerHTML = opportunities.map(opp => {
+            const riskColor = opp.risk === 'low' ? '#27ae60' : opp.risk === 'medium' ? '#f39c12' : '#e74c3c';
+            const liquidityColor = opp.liquidityScore > 0.5 ? '#27ae60' : opp.liquidityScore > 0.2 ? '#f39c12' : '#e74c3c';
+            
+            return `
+                <tr>
+                    <td><strong>${opp.itemName}</strong><br><small>T${albionAPI.items.find(i => i.id === opp.itemId)?.tier || 4}</small></td>
+                    <td>${opp.buyCity}</td>
+                    <td>${opp.sellCity}</td>
+                    <td style="color: #27ae60; font-weight: bold;">${opp.profit.toLocaleString()}</td>
+                    <td>${opp.margin}%</td>
+                    <td><span style="color: ${liquidityColor}; font-weight: bold;">${opp.liquidityScore.toFixed(1)}</span></td>
+                    <td><span style="color: ${riskColor}; font-weight: bold;">${opp.risk.toUpperCase()}</span></td>
+                    <td>
+                        <button class="btn-secondary save-flip" data-opp='${JSON.stringify(opp).replace(/'/g, "\\'")}'>
+                            <i class="fas fa-save"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
 
-        // Add save handlers
         container.querySelectorAll('.save-flip').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const oppData = JSON.parse(e.target.dataset.opp);
-                dataManager.saveFlip(oppData);
+                dataManager.saveFlipOpportunity(oppData);
                 this.showSuccess('Flip opportunity saved!');
             });
         });
     }
 
-    async checkItemPrices(specificItemId = null) {
+    async checkRealItemPrices(specificItemId = null) {
         this.showLoading(true);
         
         try {
@@ -482,17 +527,21 @@ class UIManager {
             if (!itemId) {
                 const searchValue = document.getElementById('priceSearch').value.trim();
                 if (!searchValue) {
-                    this.showError('Please enter an item to search');
+                    this.showError('Please enter an item name');
                     return;
                 }
-                // In a real implementation, you'd map the search term to an item ID
-                itemId = 'T4_METALBAR'; // Default for demo
+                const results = await albionAPI.searchItems(searchValue);
+                if (results.length === 0) {
+                    this.showError('Item not found: ' + searchValue);
+                    return;
+                }
+                itemId = results[0].id;
             }
 
             const prices = await albionAPI.getMarketPrices(itemId);
-            this.displayPriceComparison(prices);
+            this.displayRealPriceComparison(prices, itemId);
 
-            this.updateStatus(`Price check completed for ${itemId}`);
+            this.updateStatus(`Real price check completed`);
 
         } catch (error) {
             this.showError('Failed to check prices: ' + error.message);
@@ -501,14 +550,16 @@ class UIManager {
         }
     }
 
-    displayPriceComparison(prices) {
+    displayRealPriceComparison(prices, itemId) {
         const container = document.getElementById('priceComparison');
+        const item = albionAPI.items.find(i => i.id === itemId) || { name: itemId, tier: 4 };
         
         if (!prices || prices.length === 0) {
             container.innerHTML = `
                 <div class="no-data">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>No price data available for this item</p>
+                    <p>No price data available for ${item.name}</p>
+                    <small>This item may not be actively traded</small>
                 </div>
             `;
             return;
@@ -516,12 +567,16 @@ class UIManager {
 
         const html = `
             <div class="table-container">
+                <div class="price-header">
+                    <h4>${item.name} (T${item.tier}) - Real Market Prices</h4>
+                    <small>Updated: ${new Date().toLocaleTimeString()}</small>
+                </div>
                 <table>
                     <thead>
                         <tr>
                             <th>City</th>
-                            <th>Sell Price</th>
-                            <th>Buy Price</th>
+                            <th>Best Sell Price</th>
+                            <th>Best Buy Price</th>
                             <th>Orders</th>
                             <th>Supply</th>
                             <th>Demand</th>
@@ -529,25 +584,23 @@ class UIManager {
                         </tr>
                     </thead>
                     <tbody>
-                        ${prices.map(price => `
-                            <tr>
-                                <td><strong>${price.city}</strong></td>
-                                <td>${price.sell_price_min ? price.sell_price_min.toLocaleString() : 'N/A'}</td>
-                                <td>${price.buy_price_max ? price.buy_price_max.toLocaleString() : 'N/A'}</td>
-                                <td>${price.sell_order_count || 0}/${price.buy_order_count || 0}</td>
-                                <td>
-                                    <span class="supply-${this.getSupplyLevel(price.sell_order_count)}">
-                                        ${this.getSupplyLevel(price.sell_order_count).toUpperCase()}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="demand-${this.getDemandLevel(price.buy_order_count)}">
-                                        ${this.getDemandLevel(price.buy_order_count).toUpperCase()}
-                                    </span>
-                                </td>
-                                <td>${this.getBestAction(price)}</td>
-                            </tr>
-                        `).join('')}
+                        ${prices.map(price => {
+                            const supplyLevel = this.getSupplyLevel(price.sell_order_count);
+                            const demandLevel = this.getDemandLevel(price.buy_order_count);
+                            const bestAction = this.getBestRealAction(price);
+                            
+                            return `
+                                <tr>
+                                    <td><strong>${price.city}</strong></td>
+                                    <td>${price.sell_price_min ? price.sell_price_min.toLocaleString() + ' silver' : 'N/A'}</td>
+                                    <td>${price.buy_price_max ? price.buy_price_max.toLocaleString() + ' silver' : 'N/A'}</td>
+                                    <td>${price.sell_order_count || 0} / ${price.buy_order_count || 0}</td>
+                                    <td><span class="supply-${supplyLevel}">${supplyLevel.toUpperCase()}</span></td>
+                                    <td><span class="demand-${demandLevel}">${demandLevel.toUpperCase()}</span></td>
+                                    <td><span class="action-${bestAction.toLowerCase()}">${bestAction}</span></td>
+                                </tr>
+                            `;
+                        }).join('')}
                     </tbody>
                 </table>
             </div>
@@ -557,91 +610,136 @@ class UIManager {
     }
 
     getSupplyLevel(orderCount) {
-        if (!orderCount) return 'none';
+        if (!orderCount || orderCount === 0) return 'none';
         if (orderCount > 100) return 'high';
         if (orderCount > 20) return 'medium';
         return 'low';
     }
 
     getDemandLevel(orderCount) {
-        if (!orderCount) return 'none';
+        if (!orderCount || orderCount === 0) return 'none';
         if (orderCount > 100) return 'high';
         if (orderCount > 20) return 'medium';
         return 'low';
     }
 
-    getBestAction(price) {
-        if (!price.sell_price_min || !price.buy_price_max) return 'Monitor';
-        if (price.sell_order_count > price.buy_order_count * 2) return 'Buy';
-        if (price.buy_order_count > price.sell_order_count * 2) return 'Sell';
-        return 'Hold';
+    getBestRealAction(price) {
+        if (!price.sell_price_min || !price.buy_price_max) return 'MONITOR';
+        
+        const spread = price.buy_price_max - price.sell_price_min;
+        const spreadPercentage = (spread / price.sell_price_min) * 100;
+        
+        if (spreadPercentage > 20 && price.sell_order_count > price.buy_order_count) return 'BUY';
+        if (spreadPercentage > 10 && price.buy_order_count > price.sell_order_count * 2) return 'SELL';
+        return 'HOLD';
     }
 
-    async calculateGatheringProfit() {
+    async calculateRealGatheringProfit() {
         this.showLoading(true);
         
         try {
             const resourceType = document.getElementById('resourceType').value;
             const tier = parseInt(document.getElementById('tierLevel').value);
+            const hasPremium = document.getElementById('premiumBonus').checked;
 
-            const result = profitCalculators.calculateGatheringProfit(resourceType, tier);
-
-            this.showGatheringResult(result, resourceType, tier);
-
-            this.updateStatus(`Calculated ${resourceType} gathering profits for T${tier}`);
+            const efficiency = profitCalculators.calculateGatheringEfficiency(resourceType, tier, tier, hasPremium);
+            
+            // Get current resource prices
+            const resourceId = `T${tier}_${resourceType.toUpperCase()}`;
+            const prices = await albionAPI.getMarketPrices(resourceId);
+            const avgPrice = prices.reduce((sum, p) => sum + (p.sell_price_min || 0), 0) / prices.length || 100;
+            
+            const silverPerHour = efficiency.yieldPerHour * avgPrice;
+            
+            this.displayRealGatheringResult(efficiency, silverPerHour, resourceType, tier);
 
         } catch (error) {
-            this.showError('Failed to calculate gathering profits: ' + error.message);
+            this.showError('Failed to calculate gathering profit: ' + error.message);
         } finally {
             this.showLoading(false);
         }
     }
 
-    showGatheringResult(result, resourceType, tier) {
-        // This would display the gathering calculation results
-        alert(`T${tier} ${resourceType} Gathering:\n` +
-              `Estimated: ${result.silverPerHour.toLocaleString()} silver/hour\n` +
-              `Risk: ${result.risk}\n` +
-              `Zones: ${result.optimalZones.join(', ')}`);
+    displayRealGatheringResult(efficiency, silverPerHour, resourceType, tier) {
+        alert(`Real Gathering Analysis - T${tier} ${resourceType}:
+        
+Estimated Yield: ${efficiency.yieldPerHour.toLocaleString()} units/hour
+Silver/Hour: ${silverPerHour.toLocaleString()} silver
+Optimal Tier: T${efficiency.optimalTier}
+Recommended Gear: ${efficiency.recommendedGear.join(', ')}
+
+Based on current market prices and Albion gathering mechanics.`);
     }
 
-    loadSettings() {
+    loadRealSettings() {
         const settings = dataManager.data.settings;
         document.getElementById('defaultTax').value = settings.taxRate;
         document.getElementById('autoPremium').checked = settings.assumePremium;
         document.getElementById('updateInterval').value = settings.updateInterval;
+        
+        // Display real stats
+        const stats = dataManager.getStats();
+        document.getElementById('userStats').innerHTML = `
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>${stats.totalProfit.toLocaleString()}</h3>
+                    <p>Total Tracked Profit</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>${stats.tradesCompleted}</h3>
+                    <p>Trades Completed</p>
+                </div>
+            </div>
+        `;
     }
 
-    exportData() {
+    exportRealData() {
         const downloadUrl = dataManager.exportData();
         const a = document.createElement('a');
         a.href = downloadUrl;
-        a.download = 'albion-profit-maker-backup.json';
+        a.download = `albion-profit-data-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(downloadUrl);
         
-        this.showSuccess('Data exported successfully!');
+        this.showSuccess('Real data exported successfully!');
     }
 
-    clearData() {
-        if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+    clearRealData() {
+        if (confirm('Are you sure you want to clear ALL real data? This includes your saved opportunities, stats, and settings.')) {
             dataManager.clearData();
-            this.showSuccess('All data cleared successfully!');
+            this.showSuccess('All real data cleared successfully!');
+            this.loadRealSettings();
         }
     }
 
-    async refreshAllData() {
+    async refreshRealData() {
         this.showLoading(true);
         try {
             albionAPI.clearCache();
-            await this.loadDashboardData();
-            this.updateStatus('All data refreshed successfully!');
+            await this.loadRealDashboard();
+            this.updateStatus('All real data refreshed from API');
         } catch (error) {
-            this.showError('Failed to refresh data: ' + error.message);
+            this.showError('Failed to refresh real data: ' + error.message);
         } finally {
             this.showLoading(false);
+        }
+    }
+
+    loadUserPreferences() {
+        // Load user preferences from data manager
+        const settings = dataManager.data.settings;
+        if (settings.theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
         }
     }
 
@@ -655,20 +753,63 @@ class UIManager {
     updateStatus(message, isError = false) {
         const statusElement = document.getElementById('statusMessage');
         const icon = isError ? 'exclamation-triangle' : 'info-circle';
+        const color = isError ? '#e74c3c' : '#2c3e50';
+        
         statusElement.innerHTML = `<i class="fas fa-${icon}"></i> <span>${message}</span>`;
-        statusElement.style.color = isError ? '#e74c3c' : '#2c3e50';
+        statusElement.style.color = color;
     }
 
     showError(message) {
         this.updateStatus(message, true);
-        console.error(message);
+        console.error('App Error:', message);
     }
 
     showSuccess(message) {
         this.updateStatus(message, false);
-        // You could add a toast notification here
+        // Optional: Add toast notification
+        if (dataManager.data.settings.notifications) {
+            this.showToast(message, 'success');
+        }
+    }
+
+    showToast(message, type = 'info') {
+        // Simple toast notification implementation
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check' : 'info'}"></i>
+            <span>${message}</span>
+        `;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#27ae60' : '#3498db'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        `;
+        
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
+    getTabDisplayName(tab) {
+        const names = {
+            'dashboard': 'Real-Time Dashboard',
+            'crafting': 'Real Crafting Calculator', 
+            'flipping': 'Real Market Flipping',
+            'prices': 'Real Price Checker',
+            'farming': 'Real Farming Calculator',
+            'settings': 'Real Settings'
+        };
+        return names[tab] || tab;
     }
 }
 
-// Create global UI instance
+// Initialize global UI instance
 window.uiManager = new UIManager();
