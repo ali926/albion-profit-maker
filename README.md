@@ -26,7 +26,7 @@ A free web application for Albion Online players to maximize silver earnings thr
 
 
 
-Visit: \[yourusername.github.io/albion-profit-maker](https://yourusername.github.io/albion-profit-maker)
+Visit: \[ali926.github.io/albion-profit-maker](https://ali926.github.io/albion-profit-maker)
 
 
 
@@ -61,4 +61,5 @@ Visit: \[yourusername.github.io/albion-profit-maker](https://yourusername.github
 
 
 MIT License - Free to use and modify
+
 
