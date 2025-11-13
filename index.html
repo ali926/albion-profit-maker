@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Albion Profit Maker - FREE Market Analysis Tool</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>Albion Profit Maker</h2>
+            <p>Loading market data...</p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="app-container" style="display: none;">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-coins"></i>
+                    <h1>Albion Profit Maker</h1>
+                </div>
+                <div class="header-info">
+                    <span class="version-badge">FREE</span>
+                    <div class="api-status" id="apiStatus">
+                        <i class="fas fa-circle"></i>
+                        <span>API Connected</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Navigation -->
+        <nav class="main-nav">
+            <div class="nav-container">
+                <button class="nav-btn active" data-tab="dashboard">
+                    <i class="fas fa-home"></i>
+                    Dashboard
+                </button>
+                <button class="nav-btn" data-tab="crafting">
+                    <i class="fas fa-hammer"></i>
+                    Crafting
+                </button>
+                <button class="nav-btn" data-tab="flipping">
+                    <i class="fas fa-exchange-alt"></i>
+                    Flipping
+                </button>
+                <button class="nav-btn" data-tab="prices">
+                    <i class="fas fa-chart-line"></i>
+                    Prices
+                </button>
+                <button class="nav-btn" data-tab="farming">
+                    <i class="fas fa-tractor"></i>
+                    Farming
+                </button>
+                <button class="nav-btn" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="dashboard-header">
+                    <h2>Market Dashboard</h2>
+                    <button class="refresh-btn" id="refreshAll">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh All Data
+                    </button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="topFlipProfit">0</h3>
+                            <p>Best Flip Profit</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-industry"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="topCraftProfit">0</h3>
+                            <p>Best Craft Profit</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="hotItems">0</h3>
+                            <p>Hot Opportunities</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="lastUpdate">Just now</h3>
+                            <p>Last Update</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-sections">
+                    <div class="section">
+                        <h3>Top Crafting Opportunities</h3>
+                        <div id="topCrafting" class="opportunities-list">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+                    <div class="section">
+                        <h3>Best Flip Opportunities</h3>
+                        <div id="topFlipping" class="opportunities-list">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Crafting Calculator Tab -->
+            <div id="crafting" class="tab-content">
+                <div class="tab-header">
+                    <h2><i class="fas fa-hammer"></i> Crafting Profit Calculator</h2>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="calculateCrafting">
+                            <i class="fas fa-calculator"></i>
+                            Calculate Profits
+                        </button>
+                        <button class="btn-secondary" id="clearCrafting">
+                            <i class="fas fa-trash"></i>
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label for="itemSearch">Search Items</label>
+                        <div class="search-combo">
+                            <input type="text" id="itemSearch" placeholder="Type item name...">
+                            <div id="searchResults" class="search-results"></div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Settings</label>
+                        <div class="settings-grid">
+                            <label class="checkbox">
+                                <input type="checkbox" id="premiumBonus" checked>
+                                <span class="checkmark"></span>
+                                Premium Bonus (47.5% RR)
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" id="useJournals">
+                                <span class="checkmark"></span>
+                                Use Journals
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" id="useFocus">
+                                <span class="checkmark"></span>
+                                Use Focus
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="taxRate">Tax Rate (%)</label>
+                        <input type="number" id="taxRate" value="3" min="0" max="10" step="0.1">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="craftingCity">Crafting City</label>
+                        <select id="craftingCity">
+                            <option value="all">All Cities</option>
+                            <option value="Thetford">Thetford</option>
+                            <option value="Fort Sterling">Fort Sterling</option>
+                            <option value="Lymhurst">Lymhurst</option>
+                            <option value="Bridgewatch">Bridgewatch</option>
+                            <option value="Martlock">Martlock</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="results-section">
+                    <h3>Profitable Crafting Opportunities</h3>
+                    <div class="filters">
+                        <select id="profitFilter">
+                            <option value="all">All Profits</option>
+                            <option value="high">High Profit (>20%)</option>
+                            <option value="medium">Medium Profit (10-20%)</option>
+                            <option value="low">Low Profit (<10%)</option>
+                        </select>
+                        <select id="riskFilter">
+                            <option value="all">All Risks</option>
+                            <option value="low">Low Risk</option>
+                            <option value="medium">Medium Risk</option>
+                            <option value="high">High Risk</option>
+                        </select>
+                    </div>
+                    <div id="craftingResults" class="results-grid">
+                        <!-- Results will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Market Flipping Tab -->
+            <div id="flipping" class="tab-content">
+                <div class="tab-header">
+                    <h2><i class="fas fa-exchange-alt"></i> Market Flipping Calculator</h2>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="findFlips">
+                            <i class="fas fa-bolt"></i>
+                            Find Flips
+                        </button>
+                        <button class="btn-secondary" id="saveFlips">
+                            <i class="fas fa-save"></i>
+                            Save Results
+                        </button>
+                    </div>
+                </div>
+
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label for="minProfit">Minimum Profit</label>
+                        <input type="number" id="minProfit" value="100" placeholder="Min silver profit">
+                    </div>
+                    <div class="control-group">
+                        <label for="minMargin">Minimum Margin (%)</label>
+                        <input type="number" id="minMargin" value="5" step="0.1" placeholder="Min % margin">
+                    </div>
+                    <div class="control-group">
+                        <label for="liquidityFilter">Liquidity</label>
+                        <select id="liquidityFilter">
+                            <option value="all">Any Liquidity</option>
+                            <option value="high">High Only</option>
+                            <option value="medium">Medium+</option>
+                            <option value="low">Any (Risky)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="results-section">
+                    <div class="results-header">
+                        <h3>Flip Opportunities</h3>
+                        <div class="results-info">
+                            <span id="flipsCount">0 opportunities found</span>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="flipsTable">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Buy From</th>
+                                    <th>Sell To</th>
+                                    <th>Profit/Item</th>
+                                    <th>Margin</th>
+                                    <th>Liquidity</th>
+                                    <th>Risk</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="flipsResults">
+                                <!-- Results will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price Checker Tab -->
+            <div id="prices" class="tab-content">
+                <div class="tab-header">
+                    <h2><i class="fas fa-chart-line"></i> Multi-Market Price Checker</h2>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="checkPrices">
+                            <i class="fas fa-search"></i>
+                            Check Prices
+                        </button>
+                    </div>
+                </div>
+
+                <div class="search-section">
+                    <div class="search-box">
+                        <input type="text" id="priceSearch" placeholder="Enter item name or ID...">
+                        <button id="priceSearchBtn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div id="priceSearchResults" class="search-results"></div>
+                </div>
+
+                <div class="price-comparison">
+                    <div id="priceComparison">
+                        <div class="no-data">
+                            <i class="fas fa-shopping-cart"></i>
+                            <p>Search for an item to compare prices across all cities</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Farming Calculator Tab -->
+            <div id="farming" class="tab-content">
+                <div class="tab-header">
+                    <h2><i class="fas fa-tractor"></i> Farming & Resource Calculator</h2>
+                </div>
+                
+                <div class="farming-grid">
+                    <div class="farming-card">
+                        <div class="card-header">
+                            <i class="fas fa-mountain"></i>
+                            <h3>Resource Gathering</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>Calculate optimal gathering routes and gear</p>
+                            <div class="farming-controls">
+                                <select id="resourceType">
+                                    <option value="wood">Wood</option>
+                                    <option value="ore">Ore</option>
+                                    <option value="fiber">Fiber</option>
+                                    <option value="stone">Stone</option>
+                                    <option value="hide">Hide</option>
+                                </select>
+                                <select id="tierLevel">
+                                    <option value="4">Tier 4</option>
+                                    <option value="5">Tier 5</option>
+                                    <option value="6">Tier 6</option>
+                                    <option value="7">Tier 7</option>
+                                    <option value="8">Tier 8</option>
+                                </select>
+                                <button class="btn-primary" id="calculateGathering">
+                                    Calculate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="farming-card">
+                        <div class="card-header">
+                            <i class="fas fa-island-tropical"></i>
+                            <h3>Island Farming</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>Optimize your island production and animal breeding</p>
+                            <!-- Island farming controls will go here -->
+                        </div>
+                    </div>
+
+                    <div class="farming-card">
+                        <div class="card-header">
+                            <i class="fas fa-shipping-fast"></i>
+                            <h3>Transport Calculator</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>Find profitable trade routes between cities</p>
+                            <!-- Transport calculator controls will go here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content">
+                <div class="tab-header">
+                    <h2><i class="fas fa-cog"></i> Settings</h2>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <h3>API Settings</h3>
+                        <div class="setting-item">
+                            <label for="apiEndpoint">API Endpoint</label>
+                            <input type="text" id="apiEndpoint" value="https://west.albion-online-data.com/api/v2/stats/prices/" readonly>
+                            <small>Official Albion Online Data Project API</small>
+                        </div>
+                        <div class="setting-item">
+                            <label for="updateInterval">Update Interval (minutes)</label>
+                            <input type="number" id="updateInterval" value="5" min="1" max="60">
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Calculation Settings</h3>
+                        <div class="setting-item">
+                            <label for="defaultTax">Default Tax Rate (%)</label>
+                            <input type="number" id="defaultTax" value="3" step="0.1" min="0" max="10">
+                        </div>
+                        <div class="setting-item">
+                            <label class="checkbox">
+                                <input type="checkbox" id="autoPremium" checked>
+                                <span class="checkmark"></span>
+                                Assume Premium by Default
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Data Management</h3>
+                        <div class="setting-item">
+                            <button class="btn-secondary" id="exportData">
+                                <i class="fas fa-download"></i>
+                                Export Data
+                            </button>
+                            <button class="btn-secondary" id="importData">
+                                <i class="fas fa-upload"></i>
+                                Import Data
+                            </button>
+                            <button class="btn-danger" id="clearData">
+                                <i class="fas fa-trash"></i>
+                                Clear All Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Status Bar -->
+        <footer class="status-bar">
+            <div class="status-content">
+                <div class="status-message" id="statusMessage">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Ready to analyze Albion Online markets</span>
+                </div>
+                <div class="status-actions">
+                    <span id="dataAge" class="data-age">Data: Just now</span>
+                    <div class="loading-indicator" id="loadingIndicator" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/calculators.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
